@@ -1,0 +1,12 @@
+# GUI 界面库
+PyQt5==5.15.10
+
+# 核心 AI 与 NLP 模型库 (会自动安装 PyTorch 等底层依赖)
+sentence-transformers==2.5.1
+
+# 科学计算与矩阵操作
+numpy==1.26.4
+scikit-learn==1.4.1.post1
+
+# Mac 原生打包工具
+pyinstaller==6.4.0
