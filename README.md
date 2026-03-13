@@ -37,7 +37,7 @@ python3 app.py
 本项目使用 PyInstaller 进行独立打包。在项目根目录下准备好你的 icon.icns 图标文件，然后执行以下命令：
 
 ```Bash
-pyinstaller --name "AI字幕对齐引擎" --windowed --noconsole --icon="icon.icns" --clean app.py
+pyinstaller --name "AI字幕对齐引擎" --windowed --noconsole --icon="1.icns" --clean app.py
 ```
 
 打包完成后，即可在 dist 目录下找到可双击运行、可随意分发的独立 Mac 软件。
