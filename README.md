@@ -1,6 +1,7 @@
 # 🎬 AI 字幕对齐引擎 Pro (AI Subtitle Alignment Engine)
 
 一款基于强大的自然语言处理 (NLP) 模型构建的本地化 Mac 桌面软件，专为字幕组、影视译者和视频创作者设计。彻底告别手动打轴的痛苦，让 AI 跨越语言壁垒，为你实现毫秒级的中外文字幕智能对齐。
+
 ![](https://img2.pixhost.to/images/6410/704282331_1.png)
 
 ## ✨ 核心特性 (Features)
