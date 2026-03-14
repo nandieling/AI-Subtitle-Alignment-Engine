@@ -1,0 +1,36 @@
+name: Build Windows App
+
+on:
+  workflow_dispatch: # 这个魔法指令允许我们在网页上点一个按钮就能触发打包
+
+jobs:
+  build:
+    runs-on: windows-latest # 告诉 GitHub：给我分配一台最新的 Windows 电脑！
+
+    steps:
+    - name: 📥 检出代码
+      uses: actions/checkout@v4
+
+    - name: 🐍 设置 Python 3.10
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 📦 安装轻量化依赖 (终极瘦身秘籍)
+      run: |
+        python -m pip install --upgrade pip
+        # 强制 Windows 安装 CPU 版的 PyTorch，能让软件体积缩小整整 2GB！
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: 🔨 执行 PyInstaller 打包
+      # 注意：如果以后你有了 icon.ico，可以把 --icon="icon.ico" 加到这行命令里
+      run: |
+        pyinstaller --name "AI字幕对齐引擎" --windowed --noconsole --clean app.py
+
+    - name: 🚀 提取打包成品并上传
+      uses: actions/upload-artifact@v4
+      with:
+        name: AI字幕对齐引擎-Windows版
+        path: dist/AI字幕对齐引擎.exe
