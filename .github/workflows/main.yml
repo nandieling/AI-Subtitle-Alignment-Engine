@@ -3,10 +3,6 @@ name: Build Windows App
 on:
   workflow_dispatch:
 
-# 顺手屏蔽掉那个烦人的 Node.js 黄字警告
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: windows-latest
@@ -27,7 +23,7 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: 🔨 执行 PyInstaller 打包 (强制使用英文名避开乱码)
+    - name: 🔨 执行 PyInstaller 打包
       run: |
         pyinstaller --name "AI_Subtitle_Aligner" --windowed --noconsole --clean app.py
 
@@ -35,4 +31,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: AI字幕对齐引擎-Windows版
-        path: dist/AI_Subtitle_Aligner.exe
+        path: dist/AI_Subtitle_Aligner
