@@ -36,7 +36,7 @@ python3 app.py
 
 ### 3. 打包为 Mac 原生应用 (.app)
 
-本项目使用 PyInstaller 进行独立打包。在项目根目录下准备好你的 icon.icns 图标文件，然后执行以下命令：
+本项目使用 PyInstaller 进行独立打包。在项目根目录下准备好你的 1.icns 图标文件，然后执行以下命令：
 
 ```Bash
 pyinstaller --name "AI字幕对齐引擎" --windowed --noconsole --icon="1.icns" --clean app.py
