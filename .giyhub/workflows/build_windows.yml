@@ -1,11 +1,15 @@
 name: Build Windows App
 
 on:
-  workflow_dispatch: # 这个魔法指令允许我们在网页上点一个按钮就能触发打包
+  workflow_dispatch:
+
+# 顺手屏蔽掉那个烦人的 Node.js 黄字警告
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
-    runs-on: windows-latest # 告诉 GitHub：给我分配一台最新的 Windows 电脑！
+    runs-on: windows-latest
 
     steps:
     - name: 📥 检出代码
@@ -16,21 +20,19 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: 📦 安装轻量化依赖 (终极瘦身秘籍)
+    - name: 📦 安装轻量化依赖
       run: |
         python -m pip install --upgrade pip
-        # 强制 Windows 安装 CPU 版的 PyTorch，能让软件体积缩小整整 2GB！
         pip install torch --index-url https://download.pytorch.org/whl/cpu
         pip install -r requirements.txt
         pip install pyinstaller
 
-    - name: 🔨 执行 PyInstaller 打包
-      # 注意：如果以后你有了 icon.ico，可以把 --icon="icon.ico" 加到这行命令里
+    - name: 🔨 执行 PyInstaller 打包 (强制使用英文名避开乱码)
       run: |
-        pyinstaller --name "AI字幕对齐引擎" --windowed --noconsole --clean app.py
+        pyinstaller --name "AI_Subtitle_Aligner" --windowed --noconsole --clean app.py
 
     - name: 🚀 提取打包成品并上传
       uses: actions/upload-artifact@v4
       with:
         name: AI字幕对齐引擎-Windows版
-        path: dist/AI字幕对齐引擎.exe
+        path: dist/AI_Subtitle_Aligner.exe
