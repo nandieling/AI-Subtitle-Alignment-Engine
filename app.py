@@ -1,5 +1,7 @@
 import sys
 import os
+import multiprocessing # <--- 新增这行，引入多进程控制库
+
 # === 新增：强制 AI 进入离线模式，彻底切断所有联网请求，杜绝卡死 ===
 os.environ['HF_HUB_OFFLINE'] = '1'
 # === 新增：关闭 Tokenizer 多线程，防止 Mac 系统的底层死锁 ===
@@ -154,9 +156,11 @@ def dtw_align(eng_subs, chn_subs, eng_embeddings, chn_embeddings):
     
     for c_idx in range(m):
         matched_eng = [p[0] for p in path if p[1] == c_idx]
-        
-        # 巧妙使用 copy，无论 SRT 还是 ASS 的元数据都能被完美保留传递
         new_sub = chn_subs[c_idx].copy() 
+        
+        # 记住原始起止时间，为后续“时空平移”做准备
+        new_sub['orig_start'] = chn_subs[c_idx]['start']
+        new_sub['orig_end'] = chn_subs[c_idx]['end']
         
         if matched_eng:
             start_time = eng_subs[min(matched_eng)]['start']
@@ -165,16 +169,53 @@ def dtw_align(eng_subs, chn_subs, eng_embeddings, chn_embeddings):
             start_time = chn_subs[c_idx]['start']
             end_time = chn_subs[c_idx]['end']
             
-        # 异常长字幕一刀切断
         if (end_time - start_time) > MAX_DURATION:
             end_time = start_time + MAX_DURATION
             
         new_sub['start'] = start_time
         new_sub['end'] = end_time
         aligned_chn_subs.append(new_sub)
-        
-    return aligned_chn_subs
 
+    # ==========================================
+    # 核心修复：时空平移恢复 (专治被强行挤压的歌词/对话)
+    # ==========================================
+    idx = 0
+    while idx < len(aligned_chn_subs):
+        next_idx = idx + 1
+        # 探测是否有被 AI 分配了完全相同起止时间的多行字幕
+        while next_idx < len(aligned_chn_subs) and \
+              aligned_chn_subs[next_idx]['start'] == aligned_chn_subs[idx]['start'] and \
+              aligned_chn_subs[next_idx]['end'] == aligned_chn_subs[idx]['end']:
+            next_idx += 1
+            
+        group_size = next_idx - idx
+        if group_size > 1:
+            # 采用“整体平移”策略：以第一句话的AI新时间为锚点，
+            # 整体平移这个组里的所有句子，完美保留它们原本的持续时长和先后顺序。
+            anchor_start = aligned_chn_subs[idx]['start']
+            original_first_start = aligned_chn_subs[idx]['orig_start']
+            shift_delta = anchor_start - original_first_start
+            
+            for k in range(idx, next_idx):
+                new_start = aligned_chn_subs[k]['orig_start'] + shift_delta
+                new_end = aligned_chn_subs[k]['orig_end'] + shift_delta
+                
+                # 保底：单句最长不超过 MAX_DURATION
+                if (new_end - new_start) > MAX_DURATION:
+                    new_end = new_start + MAX_DURATION
+                    
+                aligned_chn_subs[k]['start'] = new_start
+                aligned_chn_subs[k]['end'] = new_end
+                
+        idx = next_idx
+
+    # 清扫战场：删除临时标记
+    for sub in aligned_chn_subs:
+        sub.pop('orig_start', None)
+        sub.pop('orig_end', None)
+
+    return aligned_chn_subs
+    
 # ==========================================
 # 后台工作线程
 # ==========================================
@@ -379,6 +420,7 @@ class MainWindow(QMainWindow):
         self.chn_zone.setEnabled(True)
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support() # <--- 核心修复：严禁后台进程弹出新窗口
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
