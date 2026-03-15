@@ -196,6 +196,10 @@ class AlignWorker(QThread):
             eng_subs, _ = self.parse_file(self.eng_path)
             chn_subs, chn_original_lines = self.parse_file(self.chn_path)
 
+            # 关键修复：强制按时间轴先后顺序排序，防止 ASS 文件特效行乱序导致 DTW 算法崩溃
+            eng_subs.sort(key=lambda x: x['start'])
+            chn_subs.sort(key=lambda x: x['start'])
+
             self.progress.emit("🧠 2/6 正在加载 AI 模型 (这可能需要几秒钟)...")
             model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 
@@ -262,12 +266,31 @@ class DropZone(QLabel):
             )
             if file_path:
                 self.process_file(file_path)
-                
+
     def process_file(self, file_path):
+        # 核心升级：在任何改名操作发生前，先把最原始的路径（比如 12.ass）死死记住！
+        self.original_file_path = file_path
+        
+        dir_name = os.path.dirname(file_path)
+        base_name = os.path.basename(file_path)
+        
+        if not base_name.startswith('0'):
+            new_base_name = '0' + base_name
+            new_file_path = os.path.join(dir_name, new_base_name)
+            
+            if not os.path.exists(new_file_path):
+                try:
+                    os.rename(file_path, new_file_path)
+                    file_path = new_file_path
+                    base_name = new_base_name
+                except Exception as e:
+                    print(f"自动重命名失败: {e}")
+
         self.file_path = file_path
-        self.setText(f"✅ {self.title} 已加载\n\n{os.path.basename(file_path)}")
+        self.setText(f"✅ {self.title} 已加载\n\n{base_name}")
         self.setStyleSheet("border: 2px solid #4a90e2; border-radius: 10px; background-color: #e6f3ff; font-size: 14px; color: #333;")
-        self.file_dropped.emit(file_path)
+        self.file_dropped.emit(file_path)            
+    
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -323,12 +346,15 @@ class MainWindow(QMainWindow):
             self.status_label.setText("文件已就绪，点击按钮开始对齐")
 
     def start_process(self):
-        # 智能判断：如果放入的是 ASS，默认保存的也是 ASS
-        default_ext = os.path.splitext(self.chn_zone.file_path)[1].lower()
+        # 核心升级：不再使用当前加了0的路径，而是调取我们刚刚存在 original_file_path 里的原始路径
+        default_save_path = self.chn_zone.original_file_path
+        default_ext = os.path.splitext(default_save_path)[1].lower()
         if not default_ext: default_ext = ".srt"
         
         filter_str = f"Subtitles (*{default_ext})"
-        out_path, _ = QFileDialog.getSaveFileName(self, "保存对齐后的中文字幕", f"Aligned_Chinese{default_ext}", filter_str)
+        
+        # 弹出的窗口将默认填好原始的文件名（比如 12.ass）
+        out_path, _ = QFileDialog.getSaveFileName(self, "保存对齐后的中文字幕", default_save_path, filter_str)
         if not out_path: return
 
         self.start_btn.setEnabled(False)
