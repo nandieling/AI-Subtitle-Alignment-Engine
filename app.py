@@ -1,5 +1,10 @@
 import sys
 import os
+# === 新增：强制 AI 进入离线模式，彻底切断所有联网请求，杜绝卡死 ===
+os.environ['HF_HUB_OFFLINE'] = '1'
+# === 新增：关闭 Tokenizer 多线程，防止 Mac 系统的底层死锁 ===
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+
 import numpy as np
 import re
 import math
